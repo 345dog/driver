@@ -1,0 +1,94 @@
+#ifndef __30205_H
+#define __30205_H
+#include "sys.h"
+#include "myiic.h"
+//////////////////////////////////////////////////////////////////////////////////	 
+/							  
+//////////////////////////////////////////////////////////////////////////////////
+ #define MAX30205_ADDRESS  0X90    //8bit address converted to 7bit
+ //the address of some register
+ #define MAX30205_TEMPERATURE 0X00
+ #define MAX30205_CONFIGURATION 0X01
+ #define MAX30205_THYST         0X02
+ #define MAX30205_TOS           0X03
+ #define IIC_WRITE 0   //the dirction of the data ,WRITE
+ #define IIC_READ   1   //the dirction of the data read
+ //extern float temperature;
+ void shutdown(void);
+ void max_init (void);
+ float GetTemperature(void);
+ void I2CwriteByte(u8 address,u8 subAddress,u8 data);
+ void I2Cwriteaddr(u8 address,u8 subAddress);
+ u8 I2CreadByte(u8 address,u8 subAddress);
+ void I2CreadBytes(u8 address,u8 subAddress,u8*dest,u8 count);
+ #endif
+ /////////////////////////////////////////
+ #include "30205.h" 
+#include "delay.h" 
+//float temperature=0;
+ void shutdown(void)
+ {
+ 
+ 
+ }
+ void max_init (void)
+ {
+	 IIC_Init();
+   I2CwriteByte(MAX30205_ADDRESS, MAX30205_CONFIGURATION, 0x00);
+	 //I2CwriteByte(MAX30205_ADDRESS, MAX30205_THYST ,        0x00);
+  // I2CwriteByte(MAX30205_ADDRESS, MAX30205_TOS, 0x00);
+ } 
+ float GetTemperature(void)
+ {  
+	  float temperature1=0.0;
+    u8 readRaw[2]={0,0};
+	  u16 raw=0;
+	  u16 raw1=0;
+	  I2CreadBytes(MAX30205_ADDRESS,MAX30205_TEMPERATURE, &readRaw[0] ,2);
+	  raw=raw|readRaw[0];
+    raw1=(raw<<8)|readRaw[1];	 
+    temperature1 = raw1  * 0.00390625+2.0;     // convert to temperature
+	  return  temperature1;
+ 
+ }
+ //wirte a byte to register
+ void I2CwriteByte(u8 address,u8 subAddress,u8 data)  //
+ {
+     //IIC_Start();                                       //
+	   I2Cwriteaddr(address|IIC_WRITE,subAddress);  //
+	   IIC_Send_Byte(data);                               //
+	   IIC_Wait_Ack();                                    //
+	   IIC_Stop();	                         //
+}
+ //read a byte
+ u8 I2CreadByte(u8 address,u8 subAddress)
+ {   
+	   u8 data;
+    // IIC_Start();                           /
+	   I2Cwriteaddr(address|IIC_WRITE, subAddress); //
+     IIC_Start(); 	                                      //
+	   IIC_Send_Byte(address|IIC_READ);                //
+	 
+	   IIC_Wait_Ack();                                    //
+	   data=IIC_Read_Byte(0);
+	   IIC_Stop();	                         //
+	   return data;	   
+}
+ void I2CreadBytes(u8 address,u8 subAddress,u8*dest,u8 count)
+ {
+    int i;
+	  for(i=0;i<count;i++)
+		{
+		dest[i]=I2CreadByte(address,subAddress);
+		}
+ 
+}
+void I2Cwriteaddr(u8 address,u8 subAddress)//
+{
+     IIC_Start();                         /
+	   IIC_Send_Byte(address);             
+	   IIC_Wait_Ack();                    
+	   IIC_Send_Byte(subAddress);          
+	   IIC_Wait_Ack();                       
+	   //IIC_Stop();	                         
+}
